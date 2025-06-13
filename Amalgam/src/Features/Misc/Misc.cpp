@@ -508,7 +508,6 @@ int CMisc::AntiBackstab(CTFPlayer* pLocal, CUserCmd* pCmd, bool bSendPacket)
 			pCmd->viewangles.x = 271.f;
 		}
 		// may slip up some auto backstabs depending on mode, though we are still able to be stabbed
-
 		return 2;
 	}
 	}

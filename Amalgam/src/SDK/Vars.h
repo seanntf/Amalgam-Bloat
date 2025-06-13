@@ -221,10 +221,10 @@ namespace Vars
 		CVar(Backtrack, VA_LIST("Color", "Backtrack color"), Color_t(255, 0, 0, 0), VISUAL);
 		CVar(FakeAngle, VA_LIST("Color", "Fake angle color"), Color_t(255, 255, 255, 0), VISUAL);
 
-		CVar(IndicatorGood, "Indicator good", Color_t(0, 255, 100, 255), NOSAVE | DEBUGVAR);
-		CVar(IndicatorMid, "Indicator mid", Color_t(255, 200, 0, 255), NOSAVE | DEBUGVAR);
-		CVar(IndicatorBad, "Indicator bad", Color_t(255, 0, 0, 255), NOSAVE | DEBUGVAR);
-		CVar(IndicatorMisc, "Indicator misc", Color_t(75, 175, 255, 255), NOSAVE | DEBUGVAR);
+		CVar(IndicatorGood, "Healthbar good", Color_t(0, 255, 100, 255), NOSAVE | DEBUGVAR);
+		CVar(IndicatorMid, "Healthbar mid", Color_t(255, 200, 0, 255), NOSAVE | DEBUGVAR);
+		CVar(IndicatorBad, "Healthbar bad", Color_t(255, 0, 0, 255), NOSAVE | DEBUGVAR);
+		CVar(IndicatorMisc, "Overhealed hp", Color_t(75, 175, 255, 255), NOSAVE | DEBUGVAR);
 		CVar(IndicatorTextGood, "Indicator text good", Color_t(150, 255, 150, 255), NOSAVE | DEBUGVAR);
 		CVar(IndicatorTextMid, "Indicator text mid", Color_t(255, 200, 0, 255), NOSAVE | DEBUGVAR);
 		CVar(IndicatorTextBad, "Indicator text bad", Color_t(255, 150, 150, 255), NOSAVE | DEBUGVAR);
@@ -422,9 +422,10 @@ namespace Vars
 	NAMESPACE_END(CritHack);
 
 	NAMESPACE_BEGIN(Backtrack)
+		CVar(Enabled, "Enabled", true, VISUAL);
 		CVar(Latency, "Fake latency", 0, SLIDER_CLAMP, 0, 1000, 5);
-		CVar(Interp, "Fake interp", 0, SLIDER_CLAMP | SLIDER_PRECISION, 0, 1000, 5);
-		CVar(Window, VA_LIST("Window", "Backtrack window"), 185, SLIDER_CLAMP | SLIDER_PRECISION, 0, 200, 5);
+		CVar(Interp, "Interp", 0, SLIDER_CLAMP, 0, 1000, 5);
+		CVar(Window, "Window", 200, SLIDER_CLAMP, 0, 200, 5);
 		CVar(PreferOnShot, "Prefer on shot", false);
 
 		CVar(Offset, "Offset", 0, NOSAVE | DEBUGVAR, -1, 1);
@@ -701,6 +702,12 @@ namespace Vars
 	NAMESPACE_END(Glow);
 
 	NAMESPACE_BEGIN(Visuals)
+		SUBNAMESPACE_BEGIN(Hitmarker)
+			CVar(HitMarker, "Toggle Hitmarker", true, VISUAL);
+			CVar(HitMarkerDuration, "Hitmarker duration", 1.5f, VISUAL | SLIDER_MIN | SLIDER_PRECISION, 0.1f, 5.0f);
+			CVar(HitMarkerDrawOnTarget, "Draw on target", false, VISUAL);
+		SUBNAMESPACE_END(Hitmarker);
+
 		SUBNAMESPACE_BEGIN(Thirdperson)
 			CVar(Enabled, "Thirdperson", false, VISUAL);
 			CVar(Crosshair, VA_LIST("Crosshair", "Thirdperson crosshair"), false, VISUAL);
@@ -787,6 +794,9 @@ namespace Vars
 				VA_LIST("Off", "sky_tf2_04", "sky_upward", "sky_dustbowl_01", "sky_goldrush_01", "sky_granary_01", "sky_well_01", "sky_gravel_01", "sky_badlands_01", "sky_hydro_01", "sky_night_01", "sky_nightfall_01", "sky_trainyard_01", "sky_stormfront_01", "sky_morningsnow_01", "sky_alpinestorm_01", "sky_harvest_01", "sky_harvest_night_01", "sky_halloween", "sky_halloween_night_01", "sky_halloween_night2014_01", "sky_island_01", "sky_rainbow_01"));
 			CVarValues(WorldTexture, "World texture", std::string("Default"), VISUAL | DROPDOWN_CUSTOM, nullptr,
 				"Default", "Dev", "Camo", "Black", "White", "Flat");
+			CVarEnum(PrecipitationType, "Precipitation", 0, VISUAL, nullptr,
+				VA_LIST("Off", "Rain", "Snow"),
+				Off, Rain = 1, Snow = 2);
 			CVar(NearPropFade, "Near prop fade", false, VISUAL);
 			CVar(NoPropFade, "No prop fade", false, VISUAL);
 		SUBNAMESPACE_END(World);

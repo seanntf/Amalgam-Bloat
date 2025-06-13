@@ -15,6 +15,9 @@ void CBacktrack::Reset()
 // Returns the wish cl_interp
 float CBacktrack::GetLerp()
 {
+	if (!Vars::Backtrack::Enabled.Value)
+		return G::Lerp;
+
 	if (Vars::Misc::Game::AntiCheatCompatibility.Value)
 		return std::clamp(Vars::Backtrack::Interp.Value / 1000.f, G::Lerp, 0.1f);
 
@@ -24,6 +27,9 @@ float CBacktrack::GetLerp()
 // Returns the wish backtrack latency
 float CBacktrack::GetFake()
 {
+	if (!Vars::Backtrack::Enabled.Value)
+		return 0.f;
+
 	return std::clamp(Vars::Backtrack::Latency.Value / 1000.f, 0.f, m_flMaxUnlag);
 }
 
@@ -42,6 +48,9 @@ float CBacktrack::GetReal(int iFlow, bool bNoFake)
 // Returns the current fake interp
 float CBacktrack::GetFakeInterp()
 {
+	if (!Vars::Backtrack::Enabled.Value)
+		return 0.015f; 
+
 	if (Vars::Misc::Game::AntiCheatCompatibility.Value)
 		return std::min(m_flFakeInterp, 0.1f);
 
@@ -126,7 +135,7 @@ bool CBacktrack::GetRecords(CBaseEntity* pEntity, std::vector<TickRecord*>& vRet
 
 std::vector<TickRecord*> CBacktrack::GetValidRecords(std::vector<TickRecord*>& vRecords, CTFPlayer* pLocal, bool bDistance, float flTimeMod)
 {
-	if (vRecords.empty())
+	if (!Vars::Backtrack::Enabled.Value || vRecords.empty())
 		return {};
 
 	auto pNetChan = I::EngineClient->GetNetChannelInfo();
@@ -299,6 +308,12 @@ void CBacktrack::Store()
 
 	static auto sv_maxunlag = U::ConVars.FindVar("sv_maxunlag");
 	m_flMaxUnlag = sv_maxunlag->GetFloat();
+
+	if (!Vars::Backtrack::Enabled.Value)
+	{
+		Reset(); 
+		return;
+	}
 	
 	MakeRecords();
 	CleanRecords();
@@ -332,7 +347,7 @@ void CBacktrack::AdjustPing(CNetChannel* pNetChan)
 
 	auto Set = [&]()
 		{
-			if (!Vars::Backtrack::Latency.Value)
+			if (!Vars::Backtrack::Enabled.Value || !Vars::Backtrack::Latency.Value)
 				return 0.f;
 
 			auto pLocal = H::Entities.GetLocal();
@@ -383,6 +398,8 @@ void CBacktrack::Draw(CTFPlayer* pLocal)
 	if (!(Vars::Menu::Indicators.Value & Vars::Menu::IndicatorsEnum::Ping) || !pLocal->IsAlive())
 		return;
 
+	bool isBacktrackEnabled = Vars::Backtrack::Enabled.Value; 
+
 	auto pResource = H::Entities.GetPR();
 	auto pNetChan = I::EngineClient->GetNetChannelInfo();
 	if (!pResource || !pNetChan)
@@ -392,12 +409,12 @@ void CBacktrack::Draw(CTFPlayer* pLocal)
 	{
 		static Timer tTimer = {};
 		if (tTimer.Run(0.5f))
-			flFakeLatency = m_flFakeLatency;
+			flFakeLatency = isBacktrackEnabled ? m_flFakeLatency : 0.f; 
 	}
-	float flFakeLerp = GetFakeInterp() > G::Lerp ? GetFakeInterp() : 0.f;
+	float flFakeLerp = isBacktrackEnabled && GetFakeInterp() > G::Lerp ? GetFakeInterp() : 0.f; 
 
 	float flFake = std::min(flFakeLatency + flFakeLerp, m_flMaxUnlag) * 1000.f;
-	float flLatency = std::max(pNetChan->GetLatency(FLOW_INCOMING) + pNetChan->GetLatency(FLOW_OUTGOING) - flFakeLatency, 0.f) * 1000.f;
+	float flLatency = std::max(pNetChan->GetLatency(FLOW_INCOMING) + pNetChan->GetLatency(FLOW_OUTGOING) - (isBacktrackEnabled ? flFakeLatency : 0.f), 0.f) * 1000.f; 
 	int iLatencyScoreboard = pResource->m_iPing(pLocal->entindex());
 
 	int x = Vars::Menu::PingDisplay.Value.x;

@@ -16,6 +16,200 @@ MAKE_SIGNATURE(CWeaponMedigun_UpdateEffects, "client.dll", "40 57 48 81 EC ? ? ?
 MAKE_SIGNATURE(CWeaponMedigun_StopChargeEffect, "client.dll", "40 53 48 83 EC ? 44 0F B6 C2", 0x0);
 MAKE_SIGNATURE(CWeaponMedigun_ManageChargeEffect, "client.dll", "48 89 5C 24 ? 48 89 74 24 ? 57 48 81 EC ? ? ? ? 48 8B F1 E8 ? ? ? ? 48 8B D8", 0x0);
 
+void CVisuals::HitMarker()
+{
+    if (!Vars::Visuals::Hitmarker::HitMarker.Value || I::EngineVGui->IsGameUIVisible())
+        return;
+
+    float TimeDelta = m_HitMarker.DrawTime - I::EngineClient->Time();
+    if (TimeDelta > 0.f && m_HitMarker.AccumulatedDamage > 0)
+    {
+        m_HitMarker.Alpha = Math::RemapVal(TimeDelta, 0.f, Vars::Visuals::Hitmarker::HitMarkerDuration.Value, 0.f, 255.f);
+
+        int alpha = static_cast<int>(m_HitMarker.Alpha);
+        Color_t Col = { 255, 255, 255, alpha };
+
+        Vec3 drawPos;
+        if (Vars::Visuals::Hitmarker::HitMarkerDrawOnTarget.Value && SDK::W2S(m_HitMarker.Position, drawPos))
+        {
+            H::Draw.Line(drawPos.x - 10, drawPos.y - 10, drawPos.x - 5, drawPos.y - 5, Col);
+            H::Draw.Line(drawPos.x + 6, drawPos.y - 6, drawPos.x + 11, drawPos.y - 11, Col);
+            H::Draw.Line(drawPos.x - 10, drawPos.y + 10, drawPos.x - 5, drawPos.y + 5, Col);
+            H::Draw.Line(drawPos.x + 6, drawPos.y + 6, drawPos.x + 11, drawPos.y + 11, Col);
+        }
+        else
+        {
+            int CenterX = H::Draw.m_nScreenW / 2;
+            int CenterY = H::Draw.m_nScreenH / 2;
+
+            H::Draw.Line(CenterX - 10, CenterY - 10, CenterX - 5, CenterY - 5, Col);
+            H::Draw.Line(CenterX + 6, CenterY - 6, CenterX + 11, CenterY - 11, Col);
+            H::Draw.Line(CenterX - 10, CenterY + 10, CenterX - 5, CenterY + 5, Col);
+            H::Draw.Line(CenterX + 6, CenterY + 6, CenterX + 11, CenterY + 11, Col);
+        }
+    }
+}
+
+void CVisuals::OnPlayerHurt(int iAttacker, int iVictim, int iDamage, Vec3 vPosition)
+{
+    if (iAttacker == I::EngineClient->GetLocalPlayer() && iVictim != iAttacker)
+    {
+        float currentTime = I::EngineClient->Time();
+        
+        if (currentTime - m_HitMarker.LastHitTime > 2.0f) {
+            m_HitMarker.AccumulatedDamage = 0;
+        }
+        
+        m_HitMarker.DrawTime = currentTime + 1.5f;
+        m_HitMarker.Damage = iDamage;
+        m_HitMarker.AccumulatedDamage += iDamage;
+        m_HitMarker.Col = Color_t(255, 255, 255, 255); 
+        m_HitMarker.Position = vPosition;
+        m_HitMarker.LastHitTime = currentTime;
+    }
+}
+
+ClientClass* CVisuals::CPrecipitation::GetPrecipitationClass()
+{
+    static ClientClass* pReturn = nullptr;
+    if (!pReturn)
+    {
+        for (auto pClass = I::BaseClientDLL->GetAllClasses(); pClass; pClass = pClass->m_pNext)
+        {
+            if (pClass->m_ClassID == static_cast<int>(ETFClassID::CPrecipitation))
+            {
+                pReturn = pClass;
+                break;
+            }
+        }
+    }
+    return pReturn;
+}
+
+// Credits go to Edge/PointOne
+void CVisuals::CPrecipitation::Run()
+{
+	constexpr auto PRECIPITATION_INDEX = (MAX_EDICTS - 1);
+
+	CBaseEntity* pRainEntity = nullptr;
+	IClientNetworkable* pRainNetworkable = nullptr;
+
+	if (m_iRainEntityIndex != -1) {
+		IClientEntity* pClientEntity = I::ClientEntityList->GetClientEntity(m_iRainEntityIndex);
+		if (pClientEntity) {
+			pRainEntity = pClientEntity->GetBaseEntity();
+			pRainNetworkable = pClientEntity->GetClientNetworkable();
+		}
+		else {
+			m_iRainEntityIndex = -1;
+		}
+	}
+
+	if (!pRainEntity)
+	{
+		const auto pClass = GetPrecipitationClass();
+		if (!pClass || !pClass->m_pCreateFn)
+		{
+			m_iRainEntityIndex = -1;
+			return;
+		}
+
+		pRainNetworkable = reinterpret_cast<IClientNetworkable * (__cdecl*)(int, int)>(pClass->m_pCreateFn)(PRECIPITATION_INDEX, 0);
+		if (!pRainNetworkable)
+		{
+			m_iRainEntityIndex = -1;
+			return;
+		}
+
+		IClientEntity* pClientEntity = I::ClientEntityList->GetClientEntity(PRECIPITATION_INDEX);
+		if (!pClientEntity)
+		{
+			pRainNetworkable->Release();
+			m_iRainEntityIndex = -1;
+			return;
+		}
+		pRainEntity = pClientEntity->GetBaseEntity();
+		m_iRainEntityIndex = PRECIPITATION_INDEX;
+
+		static auto dwOff = U::NetVars.GetNetVar("CPrecipitation", "m_nPrecipType");
+		if (dwOff && pRainEntity)
+		{
+			*reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(pRainEntity) + dwOff) = Vars::Visuals::World::PrecipitationType.Value - 1;
+		}
+
+		pRainNetworkable->PreDataUpdate(DATA_UPDATE_CREATED);
+		pRainNetworkable->OnPreDataChanged(DATA_UPDATE_CREATED);
+
+		if (pRainEntity) {
+			pRainEntity->m_vecMins() = Vec3(-32767.0f, -32767.0f, -32767.0f);
+			pRainEntity->m_vecMaxs() = Vec3(32767.0f, 32767.0f, 32767.0f);
+		}
+
+		pRainNetworkable->OnDataChanged(DATA_UPDATE_CREATED);
+		pRainNetworkable->PostDataUpdate(DATA_UPDATE_CREATED);
+	}
+	else 
+	{
+		static auto dwOff = U::NetVars.GetNetVar("CPrecipitation", "m_nPrecipType");
+		if (dwOff && pRainEntity)
+		{
+			int currentType = *reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(pRainEntity) + dwOff);
+			int desiredType = Vars::Visuals::World::PrecipitationType.Value - 1;
+			if (currentType != desiredType)
+			{
+				*reinterpret_cast<int*>(reinterpret_cast<uintptr_t>(pRainEntity) + dwOff) = desiredType;
+				if (pRainNetworkable) {
+					pRainNetworkable->OnDataChanged(DATA_UPDATE_DATATABLE_CHANGED);
+				}
+			}
+		}
+	}
+}
+
+void CVisuals::CPrecipitation::Cleanup()
+{
+	if (m_iRainEntityIndex != -1)
+	{
+		IClientNetworkable* pRainNetworkable = I::ClientEntityList->GetClientNetworkable(m_iRainEntityIndex);
+		if (pRainNetworkable)
+		{
+			pRainNetworkable->Release();
+		}
+		m_iRainEntityIndex = -1;
+	}
+}
+
+void CVisuals::UpdatePrecipitation()
+{
+	if (!I::EngineClient || !I::ClientState || !I::BaseClientDLL) {
+		if (m_Precipitation.IsRaining()) {
+			m_Precipitation.Cleanup();
+		}
+		return;
+	}
+	bool bReady = I::EngineClient->IsInGame()
+		&& I::EngineClient->IsConnected()
+		&& I::ClientState->m_nSignonState == SIGNONSTATE_FULL; 
+	if (!bReady)
+	{
+		if (m_Precipitation.IsRaining()) {
+			m_Precipitation.Cleanup();
+		}
+		return;
+	}
+
+	if (Vars::Visuals::World::PrecipitationType.Value != Vars::Visuals::World::PrecipitationTypeEnum::Off)
+	{
+		m_Precipitation.Run();
+	}
+	else
+	{
+		if (m_Precipitation.IsRaining()) {
+			m_Precipitation.Cleanup();
+		}
+	}
+}
+
 static std::vector<Vec3> SplashTrace(Vec3 vOrigin, float flRadius, Vec3 vNormal = { 0, 0, 1 }, bool bTrace = true, int iSegments = 100)
 {
 	if (!flRadius)
@@ -667,15 +861,40 @@ void CVisuals::Event(IGameEvent* pEvent, uint32_t uHash)
 	{
 	case FNV1A::Hash32Const("player_hurt"):
 	{
+		int iAttacker = I::EngineClient->GetPlayerForUserID(pEvent->GetInt("attacker"));
+		int iVictim = I::EngineClient->GetPlayerForUserID(pEvent->GetInt("userid"));
+		int iDamage = pEvent->GetInt("damageamount");
+
+		if (iAttacker == I::EngineClient->GetLocalPlayer() && iVictim != iAttacker)
+		{
+			float currentTime = I::EngineClient->Time();
+			
+			if (currentTime - m_HitMarker.LastHitTime > 2.0f) {
+				m_HitMarker.AccumulatedDamage = 0;
+			}
+			
+			m_HitMarker.DrawTime = currentTime + Vars::Visuals::Hitmarker::HitMarkerDuration.Value;
+			m_HitMarker.Damage = iDamage;
+			m_HitMarker.AccumulatedDamage += iDamage;
+			
+			if (Vars::Visuals::Hitmarker::HitMarkerDrawOnTarget.Value)
+			{
+				auto pVictim = I::ClientEntityList->GetClientEntity(iVictim);
+				if (pVictim)
+					m_HitMarker.Position = pVictim->As<CBaseEntity>()->GetCenter();
+			}
+			
+			m_HitMarker.LastHitTime = currentTime;
+		}
+
 		bool bBones = Vars::Visuals::Hitbox::BonesEnabled.Value & Vars::Visuals::Hitbox::BonesEnabledEnum::OnHit;
 		bool bBounds = Vars::Visuals::Hitbox::BoundsEnabled.Value & Vars::Visuals::Hitbox::BoundsEnabledEnum::OnHit;
 		if (!bBones && !bBounds)
 			return;
 
-		if (I::EngineClient->GetPlayerForUserID(pEvent->GetInt("attacker")) != I::EngineClient->GetLocalPlayer())
+		if (iAttacker != I::EngineClient->GetLocalPlayer())
 			return;
 
-		int iVictim = I::EngineClient->GetPlayerForUserID(pEvent->GetInt("userid"));
 		auto pEntity = I::ClientEntityList->GetClientEntity(iVictim)->As<CBaseAnimating>();
 		if (!pEntity || iVictim == I::EngineClient->GetLocalPlayer())
 			return;
@@ -897,6 +1116,9 @@ void CVisuals::RestoreWorldModulation()
 {
 	ApplyModulation({ 255, 255, 255, 255 });
 	ApplyModulation({ 255, 255, 255, 255 }, true);
+	if (m_Precipitation.IsRaining()) { // edge
+		m_Precipitation.Cleanup(); // edge
+	}
 }
 
 void CVisuals::CreateMove(CTFPlayer* pLocal, CTFWeaponBase* pWeapon)

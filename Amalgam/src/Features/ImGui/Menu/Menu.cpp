@@ -184,10 +184,11 @@ void CMenu::MenuAimbot(int iTab)
 				}
 				if (Section("Backtrack", 8))
 				{
+					FToggle(Vars::Backtrack::Enabled, FToggleEnum::Left);
+					FToggle(Vars::Backtrack::PreferOnShot, FToggleEnum::Right);
 					FSlider(Vars::Backtrack::Latency);
 					FSlider(Vars::Backtrack::Interp);
 					FSlider(Vars::Backtrack::Window);
-					//FToggle(Vars::Backtrack::PreferOnShot);
 				} EndSection();
 				if (Vars::Debug::Options.Value)
 				{
@@ -223,7 +224,6 @@ void CMenu::MenuAimbot(int iTab)
 					FSlider(Vars::Aimbot::Hitscan::PointScale);
 					PushTransparent(!(FGet(Vars::Aimbot::Hitscan::Modifiers) & Vars::Aimbot::Hitscan::ModifiersEnum::Tapfire));
 					{
-						//FSlider(Vars::Aimbot::Hitscan::TapFireDist);
 						FSlider("Tapfire distance", &Vars::Aimbot::Hitscan::TapFireDist[DEFAULT_BIND], 0.f, 1000.f);
 					}
 					PopTransparent();
@@ -518,6 +518,12 @@ void CMenu::MenuAimbot(int iTab)
 
 					FSlider(Vars::Visuals::Hitbox::DrawDuration);
 				} EndSection();
+				if (Section("Hitmarker", 8))
+				{
+					FToggle(Vars::Visuals::Hitmarker::HitMarker, FToggleEnum::Left);
+					FToggle(Vars::Visuals::Hitmarker::HitMarkerDrawOnTarget, FToggleEnum::Right);
+					FSlider(Vars::Visuals::Hitmarker::HitMarkerDuration);
+				} EndSection();		
 			}
 			/* Column 2 */
 			TableNextColumn();
@@ -1191,13 +1197,11 @@ void CMenu::MenuVisuals(int iTab)
 						FSlider(Vars::Visuals::Viewmodel::SwayInterp, FSliderEnum::Right);
 					}
 					PopTransparent();
-					/*
 					PushTransparent(!FGet(Vars::Visuals::Viewmodel::FieldOfView));
 					{
 						FSlider(Vars::Visuals::Viewmodel::FieldOfView);
 					}
 					PopTransparent();
-					*/
 				} EndSection();
 			}
 			/* Column 2 */
@@ -1243,12 +1247,13 @@ void CMenu::MenuVisuals(int iTab)
 					FToggle(Vars::Visuals::UI::ScoreboardColors, FToggleEnum::Left);
 					FToggle(Vars::Visuals::UI::CleanScreenshots, FToggleEnum::Right);
 				} EndSection();
-				if (Section("World"))
-				{
-					FDropdown(Vars::Visuals::World::Modulations);
-					FSDropdown(Vars::Visuals::World::WorldTexture, FDropdownEnum::Left);
-					FSDropdown(Vars::Visuals::World::SkyboxChanger, FDropdownEnum::Right);
-					PushTransparent(!(FGet(Vars::Visuals::World::Modulations) & Vars::Visuals::World::ModulationsEnum::World));
+					if (Section("World"))
+					{
+						FDropdown(Vars::Visuals::World::Modulations);
+						FDropdown(Vars::Visuals::World::PrecipitationType);
+						FSDropdown(Vars::Visuals::World::WorldTexture, FDropdownEnum::Left);
+						FSDropdown(Vars::Visuals::World::SkyboxChanger, FDropdownEnum::Right);
+						PushTransparent(!(FGet(Vars::Visuals::World::Modulations) & Vars::Visuals::World::ModulationsEnum::World));
 					{
 						FColorPicker(Vars::Colors::WorldModulation, 0, FColorPickerEnum::Left);
 					}
@@ -2728,7 +2733,7 @@ void CMenu::MenuSettings(int iTab)
 			} EndSection();
 			SetCursorPosX(GetCursorPosX() + 8);
 			PushStyleColor(ImGuiCol_Text, F::Render.Inactive.Value);
-			FText("Built @ " __DATE__ ", " __TIME__ ", " __CONFIGURATION__);
+			FText("Built with love @ " __DATE__ ", " __TIME__ ", " __CONFIGURATION__);
 
 			PopStyleColor();
 

@@ -3,18 +3,25 @@
 
 struct ResolveData
 {
-	float m_flYaw = 0.f; // to be added
-	float m_flPitch = 0.f; // to be set, if pitch oob
+	float m_flYaw = 0.f; 
+	float m_flPitch = 0.f; 
 
 	bool m_bYaw = false;
 	bool m_bPitch = false;
 	bool m_bMinwalk = true;
-	bool m_bView = false; // instead of offsetting from sent angle, offset from view to local
+	bool m_bView = false; 
 
 	bool m_bAutoSetYaw = true;
 	bool m_bAutoSetPitch = true;
 	bool m_bFirstOOBPitch = false;
 	bool m_bInversePitch = false;
+	
+	int m_iHitCount = 0;
+	int m_iMissCount = 0;
+	float m_flLastYawAttempt = 0.f;
+	float m_flLastSuccessfulYaw = 0.f;
+	float m_flLastPitchAttempt = 0.f;
+	float m_flLastSuccessfulPitch = 0.f;
 };
 
 class CResolver
