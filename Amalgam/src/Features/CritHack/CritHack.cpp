@@ -614,13 +614,13 @@ void CCritHack::Draw(CTFPlayer* pLocal)
 	const int iRounding = H::Draw.Scale(3); 
 	const int iBottomPadding = H::Draw.Scale(4, Scale_Round); 
 	const int iBarRounding = std::max(1, iRounding / 2); 
-	const int textPadding = H::Draw.Scale(8, Scale_Round); 
+	const int textPadding = H::Draw.Scale(4, Scale_Round); 
 	const int progressBarMargin = H::Draw.Scale(2, Scale_Round); 
+	const int fixedWidth = H::Draw.Scale(120, Scale_Round); 
 	auto iSlot = pWeapon->GetSlot();
 	if (!m_mStorage.contains(iSlot) || !WeaponCanCrit(pWeapon, true))
 	{
-		Vec2 textSize = H::Draw.GetTextSize("No random crits", fFont); 
-		int w = textSize.x + textPadding * 2; 
+		int w = fixedWidth; 
 		int h = H::Draw.Scale(24, Scale_Round) + iBottomPadding;
 		int x = dtPos.x - w / 2;
 		int y = dtPos.y;
@@ -661,7 +661,7 @@ void CCritHack::Draw(CTFPlayer* pLocal)
 	bool bDimBar = false;
 
 	if (Vars::Misc::Game::AntiCheatCompatibility.Value) {
-		statusText = "Anticheat compatibility";
+		statusText = "Anticheat";
 		textColor = Vars::Colors::IndicatorTextBad.Value;
 		bDimBar = true;
 	}
@@ -675,7 +675,7 @@ void CCritHack::Draw(CTFPlayer* pLocal)
 		textColor = Vars::Colors::IndicatorTextMisc.Value;
 	}
 	else if (m_bCritBanned && iSlot != SLOT_MELEE) {
-		statusText = std::format("Crit Banned ({:.0f})", m_flDamageTilFlip);
+		statusText = std::format("Crit Banned", m_flDamageTilFlip); 
 		textColor = Vars::Colors::IndicatorTextBad.Value;
 		bDimBar = true;
 	}
@@ -693,7 +693,7 @@ void CCritHack::Draw(CTFPlayer* pLocal)
 			}
 		}
 		else {
-			statusText = std::format("No crits", tStorage.m_iNextCrit);
+			statusText = std::format("No crits available", tStorage.m_iNextCrit); 
 			textColor = Vars::Colors::IndicatorTextBad.Value;
 			bDimBar = true;
 		}
@@ -704,8 +704,7 @@ void CCritHack::Draw(CTFPlayer* pLocal)
 		bDimBar = true;
 	}
 
-	Vec2 textSize = H::Draw.GetTextSize(statusText.c_str(), fFont); 
-	int w = textSize.x + textPadding * 2; 
+	int w = fixedWidth; 
 	int h = H::Draw.Scale(24, Scale_Round) + iBottomPadding;
 	int x = dtPos.x - w / 2;
 	int y = dtPos.y;
