@@ -5,7 +5,7 @@
 #include "../Aimbot/AutoRocketJump/AutoRocketJump.h"
 #include "../Backtrack/Backtrack.h"
 
-// this is different from crithack for some reason, im not changing this since it works anyways
+// gonna replace this sooner or later for every change that uses this
 static Color_t BlendColors(const Color_t& a, const Color_t& b, float ratio) 
 {
     Color_t result;
@@ -418,14 +418,15 @@ void CTickshiftHandler::Draw(CTFPlayer* pLocal)
 	const int iRounding = H::Draw.Scale(3);
 	const int iBottomPadding = H::Draw.Scale(4, Scale_Round);
 	const int iBarRounding = std::max(1, iRounding / 2);
+	const int progressBarMargin = H::Draw.Scale(1, Scale_Round); 
 
-	int w = H::Draw.Scale(150, Scale_Round);
+	int w = H::Draw.Scale(120, Scale_Round); 
 	int h = H::Draw.Scale(24, Scale_Round) + iBottomPadding;
 	int x = dtPos.x - w / 2;
 	int y = dtPos.y;
 	int barHeight = H::Draw.Scale(2, Scale_Round); 
 	int barY = y + h - barHeight - iBottomPadding;
-	int totalBarWidth = w - 2 * iRounding;
+	int totalBarWidth = w - 2 * iRounding - 2 * progressBarMargin; 
 
 	H::Draw.FillRoundRect(x, y, w, h, iRounding, Vars::Menu::Theme::Background.Value);
 
@@ -438,15 +439,15 @@ void CTickshiftHandler::Draw(CTFPlayer* pLocal)
 	int iChoke = std::max(I::ClientState->chokedcommands - (F::AntiAim.YawOn() ? F::AntiAim.AntiAimTicks() : 0), 0);
 	int iTicks = std::clamp(F::Ticks.m_iShiftedTicks + iChoke, 0, F::Ticks.m_iMaxShift);
 
-	H::Draw.FillRoundRect(x + iRounding + 1, barY, totalBarWidth - 2, barHeight, iBarRounding, barBackgroundColor);
+	H::Draw.FillRoundRect(x + iRounding + progressBarMargin, barY, totalBarWidth, barHeight, iBarRounding, barBackgroundColor); 
 
 	static float flAnimatedRatio = 0.0f;
 	float flTargetRatio = F::Ticks.m_iMaxShift > 0 ? float(iTicks) / F::Ticks.m_iMaxShift : 0.0f;
 	flAnimatedRatio = flAnimatedRatio + (flTargetRatio - flAnimatedRatio) * std::min(I::GlobalVars->frametime * 11.3f, 1.0f);
-	int barWidth = static_cast<int>((totalBarWidth - 2) * flAnimatedRatio);
+	int barWidth = static_cast<int>(totalBarWidth * flAnimatedRatio); 
 
 	if (barWidth > 0)
-		H::Draw.FillRoundRect(x + iRounding + 1, barY, barWidth, barHeight, iBarRounding, barColor); 
+		H::Draw.FillRoundRect(x + iRounding + progressBarMargin, barY, barWidth, barHeight, iBarRounding, barColor);
 
 
 	if (iTicks >= F::Ticks.m_iMaxShift) { // Use m_iMaxShift for comparison

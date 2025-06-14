@@ -11,16 +11,14 @@
 
 //#define SERVER_CRIT_DATA
 
-// im a retard, so lets manually blend them colors
-Color_t BlendColors(const Color_t& a, const Color_t& b, float ratio)
+static Color_t BlendColors(const Color_t& a, const Color_t& b, float ratio) 
 {
-    ratio = std::clamp(ratio, 0.0f, 1.0f);
-    return Color_t(
-        a.r + (b.r - a.r) * ratio,
-        a.g + (b.g - a.g) * ratio,
-        a.b + (b.b - a.b) * ratio,
-        a.a + (b.a - a.a) * ratio
-    );
+    Color_t result;
+    result.r = static_cast<byte>(a.r * (1.0f - ratio) + b.r * ratio);
+    result.g = static_cast<byte>(a.g * (1.0f - ratio) + b.g * ratio);
+    result.b = static_cast<byte>(a.b * (1.0f - ratio) + b.b * ratio);
+    result.a = static_cast<byte>(a.a * (1.0f - ratio) + b.a * ratio);
+    return result;
 }
 
 void CCritHack::Fill(const CUserCmd* pCmd, int n)
