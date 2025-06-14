@@ -30,6 +30,8 @@
 ###### If nightly.link is down, you can still download through [github](https://github.com/seanntf/Amalgam-Bloat/actions) with an account.
 
 # Amalgam-Bloat
+![image](https://github.com/user-attachments/assets/a5bc1332-d9d9-4f31-a1c6-9afe6f0571f1)
+###### You can modify Rain settings with r_rain in console
 
 [![GitHub Repo stars](https://img.shields.io/github/stars/seanntf/Amalgam-Bloat)](/../../stargazers)
 [![Discord](https://img.shields.io/discord/1227898008373297223?logo=Discord&label=discord)](https://discord.gg/RbP9DfkUhe)
