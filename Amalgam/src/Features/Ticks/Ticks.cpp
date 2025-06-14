@@ -420,7 +420,7 @@ void CTickshiftHandler::Draw(CTFPlayer* pLocal)
 	const int iBarRounding = std::max(1, iRounding / 2);
 	const int progressBarMargin = H::Draw.Scale(1, Scale_Round); 
 
-	int w = H::Draw.Scale(120, Scale_Round); 
+	int w = H::Draw.Scale(120, Scale_Round);
 	int h = H::Draw.Scale(24, Scale_Round) + iBottomPadding;
 	int x = dtPos.x - w / 2;
 	int y = dtPos.y;

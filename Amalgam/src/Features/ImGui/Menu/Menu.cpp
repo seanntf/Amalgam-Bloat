@@ -1250,7 +1250,7 @@ void CMenu::MenuVisuals(int iTab)
 					if (Section("World"))
 					{
 						FDropdown(Vars::Visuals::World::Modulations);
-						FDropdown(Vars::Visuals::World::PrecipitationType);
+						FDropdown(Vars::Visuals::World::PrecipitationType, FDropdownEnum::None, 0, &Hovered); FTooltip("You can modify these in Console using r_rain and r_snow", Hovered); 
 						FSDropdown(Vars::Visuals::World::WorldTexture, FDropdownEnum::Left);
 						FSDropdown(Vars::Visuals::World::SkyboxChanger, FDropdownEnum::Right);
 						PushTransparent(!(FGet(Vars::Visuals::World::Modulations) & Vars::Visuals::World::ModulationsEnum::World));

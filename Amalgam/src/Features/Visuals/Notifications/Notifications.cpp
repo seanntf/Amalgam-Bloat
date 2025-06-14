@@ -95,7 +95,7 @@ void CNotifications::Draw()
 		float flProgress = Math::RemapVal(flTime - flCreate, 0.f, tNotification.m_flLifeTime, 0.f, 1.f);
 		flProgress = std::clamp(flProgress, 0.0f, 1.0f);
 
-		int barHeight = H::Draw.Scale(2, Scale_Round);  
+		int barHeight = H::Draw.Scale(1, Scale_Round);  // Reduced from 2
 		int barY = y + h - barHeight - iBottomPadding;
 		int progressBarMargin = H::Draw.Scale(2, Scale_Round);
 		int totalBarWidth = w - 2 * iRounding - 2 * progressBarMargin;
