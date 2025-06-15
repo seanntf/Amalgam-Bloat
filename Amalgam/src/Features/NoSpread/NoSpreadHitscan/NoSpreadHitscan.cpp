@@ -3,8 +3,19 @@
 #include "../../Ticks/Ticks.h"
 #include <regex>
 #include <numeric>
+#include <algorithm> 
 
 MAKE_SIGNATURE(CTFWeaponBaseGun_GetWeaponSpread, "client.dll", "48 89 5C 24 ? 57 48 83 EC ? 4C 63 91", 0x0);
+
+static Color_t BlendColors(const Color_t& a, const Color_t& b, float ratio) 
+{
+    Color_t result;
+    result.r = static_cast<byte>(a.r * (1.0f - ratio) + b.r * ratio);
+    result.g = static_cast<byte>(a.g * (1.0f - ratio) + b.g * ratio);
+    result.b = static_cast<byte>(a.b * (1.0f - ratio) + b.b * ratio);
+    result.a = static_cast<byte>(a.a * (1.0f - ratio) + b.a * ratio);
+    return result;
+}
 
 void CNoSpreadHitscan::Reset()
 {
@@ -191,7 +202,7 @@ void CNoSpreadHitscan::Run(CTFPlayer* pLocal, CTFWeaponBase* pWeapon, CUserCmd* 
 	G::SilentAngles = true;
 }
 
-void CNoSpreadHitscan::Draw(CTFPlayer* pLocal)
+void CNoSpreadHitscan::Draw(CTFPlayer* pLocal) // i think this works?
 {
 	if (!(Vars::Menu::Indicators.Value & Vars::Menu::IndicatorsEnum::SeedPrediction) || !Vars::Aimbot::General::NoSpread.Value || !pLocal->IsAlive())
 		return;
@@ -200,27 +211,57 @@ void CNoSpreadHitscan::Draw(CTFPlayer* pLocal)
 	if (!pWeapon || !ShouldRun(pLocal, pWeapon))
 		return;
 
-	int x = Vars::Menu::SeedPredictionDisplay.Value.x;
-	int y = Vars::Menu::SeedPredictionDisplay.Value.y + 8;
+	const DragBox_t dtPos = Vars::Menu::SeedPredictionDisplay.Value;
 	const auto& fFont = H::Fonts.GetFont(FONT_INDICATORS);
-	const int nTall = fFont.m_nTall + H::Draw.Scale(1);
+	const int iRounding = H::Draw.Scale(3);
+	const int iBottomPadding = H::Draw.Scale(4, Scale_Round);
+	const int textPadding = H::Draw.Scale(4, Scale_Round);
+	const int fixedWidth = H::Draw.Scale(120, Scale_Round);
+	const int progressBarMargin = H::Draw.Scale(2, Scale_Round);
+	const int iBarRounding = std::max(1, iRounding / 2);
 
-	EAlign align = ALIGN_TOP;
-	if (x <= 100 + H::Draw.Scale(50, Scale_Round))
-	{
-		x -= H::Draw.Scale(42, Scale_Round);
-		align = ALIGN_TOPLEFT;
-	}
-	else if (x >= H::Draw.m_nScreenW - 100 - H::Draw.Scale(50, Scale_Round))
-	{
-		x += H::Draw.Scale(42, Scale_Round);
-		align = ALIGN_TOPRIGHT;
-	}
+	std::string mainStatusText = std::format("Uptime: {}", GetFormat(m_flServerTime));
+	int textW, textH;
+	I::MatSystemSurface->GetTextSize(fFont.m_dwFont, SDK::ConvertUtf8ToWide(mainStatusText.c_str()).c_str(), textW, textH);
 
-	const auto& cColor = m_bSynced ? Vars::Menu::Theme::Active.Value : Vars::Menu::Theme::Inactive.Value;
+	int w = fixedWidth;
+	int h = std::max(static_cast<int>(H::Draw.Scale(24, Scale_Round)), textH + textPadding * 2) + iBottomPadding;
+	int x = dtPos.x - w / 2;
+	int y = dtPos.y;
 
-	H::Draw.StringOutlined(fFont, x, y, cColor, Vars::Menu::Theme::Background.Value, align, std::format("Uptime {}", GetFormat(m_flServerTime)).c_str());
-	H::Draw.StringOutlined(fFont, x, y += nTall, cColor, Vars::Menu::Theme::Background.Value, align, std::format("Mantissa step {}", m_flMantissaStep).c_str());
-	if (Vars::Debug::Info.Value)
-		H::Draw.StringOutlined(fFont, x, y += nTall, cColor, Vars::Menu::Theme::Background.Value, align, std::format("Delta {:.6f}", m_dTimeDelta).c_str());
+	H::Draw.FillRoundRect(x, y, w, h, iRounding, Vars::Menu::Theme::Background.Value);
+
+	int barHeight = H::Draw.Scale(2, Scale_Round);
+	int barY = y + h - barHeight - iBottomPadding;
+	
+	float flDays = m_flServerTime / 86400.f; // bing bong math server life 
+	float flRatio = std::clamp(flDays / 30.f, 0.0f, 1.0f); // 30 days baby because i dont think servers last for more than 30!!
+
+	static float flAnimatedRatio = 0.0f;
+	flAnimatedRatio = flAnimatedRatio + (flRatio - flAnimatedRatio) * std::min(I::GlobalVars->frametime * 11.3f, 1.0f);
+
+	int totalBarWidth = w - 2 * iRounding - 2 * progressBarMargin;
+	int currentBarWidth = static_cast<int>(totalBarWidth * flAnimatedRatio);
+
+	Color_t dimmedAccent = BlendColors(Vars::Menu::Theme::Accent.Value, Vars::Menu::Theme::Background.Value, 0.5f);
+	H::Draw.FillRoundRect(x + iRounding + progressBarMargin, barY, totalBarWidth, barHeight, iBarRounding, dimmedAccent);
+
+	if (currentBarWidth > 0)
+		H::Draw.FillRoundRect(x + iRounding + progressBarMargin, barY, currentBarWidth, barHeight, iBarRounding, Vars::Menu::Theme::Accent.Value);
+
+	Color_t borderColor = BlendColors(Vars::Menu::Theme::Background.Value, Color_t(255, 255, 255, 50), 0.1f);
+	H::Draw.LineRoundRect(x, y, w, h, iRounding, borderColor);
+
+	const auto& cColor = m_bSynced ? Vars::Colors::IndicatorTextGood.Value : Vars::Colors::IndicatorTextBad.Value;
+
+	H::Draw.StringOutlined(
+		fFont,
+		x + textPadding,
+		y + (h - barHeight - iBottomPadding) / 2, 
+		cColor,
+		Vars::Menu::Theme::Background.Value.Alpha(150),
+		ALIGN_LEFT,
+		mainStatusText.c_str()
+	);
+
 }
