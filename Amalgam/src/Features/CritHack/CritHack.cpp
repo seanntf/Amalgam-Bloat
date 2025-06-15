@@ -673,7 +673,7 @@ void CCritHack::Draw(CTFPlayer* pLocal)
 		textColor = Vars::Colors::IndicatorTextMisc.Value;
 	}
 	else if (m_bCritBanned && iSlot != SLOT_MELEE) {
-		statusText = std::format("Crit Banned", m_flDamageTilFlip); 
+		statusText = std::format("Crit Banned ({})", static_cast<int>(m_flDamageTilFlip)); 
 		textColor = Vars::Colors::IndicatorTextBad.Value;
 		bDimBar = true;
 	}
